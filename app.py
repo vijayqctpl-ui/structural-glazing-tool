@@ -11,27 +11,6 @@ from reportlab.lib.styles import getSampleStyleSheet
 st.set_page_config(page_title="Structural Glazing Tool", layout="wide")
 
 # -----------------------------
-# STYLING
-# -----------------------------
-st.markdown("""
-<style>
-.main {
-    background-color: #f5f7fa;
-}
-h1, h2, h3 {
-    color: #1f3b4d;
-}
-.stButton>button {
-    background-color: #1f77b4;
-    color: white;
-    border-radius: 8px;
-    height: 3em;
-    width: 100%;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# -----------------------------
 # HEADER
 # -----------------------------
 st.title("Structural Glazing Design Tool")
@@ -85,19 +64,19 @@ with tabs[0]:
 
     st.subheader("Structural Bite Calculation")
 
-    shape = st.selectbox("Panel Shape", ["Rectangular", "Circular", "Triangular"])
+    shape = st.selectbox("Panel Shape", ["Rectangular", "Circular", "Triangular"], key="shape")
 
     if shape in ["Rectangular", "Circular"]:
 
         col1, col2 = st.columns(2)
 
         with col1:
-            wind = st.number_input("Wind Load (kPa)", value=2.5)
+            wind = st.number_input("Wind Load (kPa)", value=2.5, key="wind_rect")
 
         with col2:
-            span = st.number_input("Short Span / Diameter (mm)", value=1000)
+            span = st.number_input("Short Span / Diameter (mm)", value=1000, key="span_rect")
 
-        if st.button("Calculate Bite"):
+        if st.button("Calculate Bite", key="btn_bite"):
 
             bite = (wind * span) / (2 * 0.14 * 1000)
 
@@ -115,17 +94,17 @@ with tabs[0]:
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            wind_kg = st.number_input("Wind Load (kg/m²)", value=150)
+            wind_kg = st.number_input("Wind Load (kg/m²)", value=150, key="wind_tri")
 
         with col2:
-            side_A = st.number_input("Hypotenuse A (m)", value=2.5)
+            side_A = st.number_input("Hypotenuse A (m)", value=2.5, key="sideA")
 
         with col3:
-            angle_a = st.number_input("Angle a (°)", value=60)
+            angle_a = st.number_input("Angle a (°)", value=60, key="angleA")
 
-        angle_b = st.number_input("Angle b (°)", value=30)
+        angle_b = st.number_input("Angle b (°)", value=30, key="angleB")
 
-        if st.button("Calculate Triangle Bite"):
+        if st.button("Calculate Triangle Bite", key="btn_tri"):
 
             term1 = (wind_kg * side_A) / 28
 
@@ -153,17 +132,17 @@ with tabs[1]:
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        thickness = st.number_input("Glass Thickness (mm)", value=10)
+        thickness = st.number_input("Glass Thickness (mm)", value=10, key="thickness_dead")
 
     with col2:
-        height = st.number_input("Height (mm)", value=1500)
+        height = st.number_input("Height (mm)", value=1500, key="height_dead")
 
     with col3:
-        width = st.number_input("Width (mm)", value=1000)
+        width = st.number_input("Width (mm)", value=1000, key="width_dead")
 
-    sealant = st.number_input("Sealant Thickness (mm)", value=6)
+    sealant = st.number_input("Sealant Thickness (mm)", value=6, key="sealant_dead")
 
-    if st.button("Check Shear"):
+    if st.button("Check Shear", key="btn_dead"):
 
         h = height / 1000
         w = width / 1000
@@ -193,12 +172,12 @@ with tabs[2]:
     col1, col2 = st.columns(2)
 
     with col1:
-        length = st.number_input("Panel Length (mm)", value=1500)
+        length = st.number_input("Panel Length (mm)", value=1500, key="length")
 
     with col2:
-        deltaT = st.number_input("Temperature Change (°C)", value=60)
+        deltaT = st.number_input("Temperature Change (°C)", value=60, key="temp")
 
-    if st.button("Calculate Movement"):
+    if st.button("Calculate Movement", key="btn_thermal"):
 
         cte_glass = 9e-6
         cte_al = 23e-6
@@ -222,14 +201,14 @@ with tabs[3]:
 
     st.subheader("Combined Design Check")
 
-    wind = st.number_input("Wind Load (kPa)", value=2.5)
-    span = st.number_input("Short Span (mm)", value=1000)
-    thickness = st.number_input("Glass Thickness (mm)", value=10)
-    height = st.number_input("Height (mm)", value=1500)
-    width = st.number_input("Width (mm)", value=1000)
-    sealant = st.number_input("Sealant Thickness (mm)", value=6)
+    wind = st.number_input("Wind Load (kPa)", value=2.5, key="wind_comb")
+    span = st.number_input("Short Span (mm)", value=1000, key="span_comb")
+    thickness = st.number_input("Glass Thickness (mm)", value=10, key="thickness_comb")
+    height = st.number_input("Height (mm)", value=1500, key="height_comb")
+    width = st.number_input("Width (mm)", value=1000, key="width_comb")
+    sealant = st.number_input("Sealant Thickness (mm)", value=6, key="sealant_comb")
 
-    if st.button("Run Check"):
+    if st.button("Run Check", key="btn_comb"):
 
         bite = (wind * span) / (2 * 0.14 * 1000)
 
@@ -256,8 +235,8 @@ with tabs[3]:
         else:
             st.error("FINAL STATUS: NOT SAFE")
 
-        # REPORT BUTTON
-        if st.button("Generate Report"):
+        # REPORT
+        if st.button("Generate Report", key="btn_report"):
 
             doc = SimpleDocTemplate("report.pdf")
             styles = getSampleStyleSheet()
@@ -297,11 +276,11 @@ with tabs[4]:
 
     st.subheader("Material Estimation")
 
-    bite = st.number_input("Bite (mm)", value=10)
-    thickness = st.number_input("Thickness (mm)", value=6)
-    length = st.number_input("Joint Length (m)", value=10)
+    bite = st.number_input("Bite (mm)", value=10, key="bite_mat")
+    thickness = st.number_input("Thickness (mm)", value=6, key="thick_mat")
+    length = st.number_input("Joint Length (m)", value=10, key="length_mat")
 
-    if st.button("Estimate"):
+    if st.button("Estimate", key="btn_mat"):
 
         area = (bite * thickness) / 1e6
         volume = area * length
