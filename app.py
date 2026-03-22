@@ -1,9 +1,6 @@
 import streamlit as st
 import math
 from datetime import date
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
 
 # -----------------------------
 # PAGE CONFIG
@@ -21,16 +18,13 @@ st.caption("Professional Engineering Application")
 # -----------------------------
 st.markdown("## Project Information")
 
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns(2)
 
 with col1:
     project = st.text_input("Project Name")
 
 with col2:
     location = st.text_input("Location")
-
-with col3:
-    engineer = st.text_input("Engineer")
 
 st.write(f"Date: {date.today()}")
 
@@ -52,9 +46,7 @@ Minimum Thickness: 6 mm
 tabs = st.tabs([
     "Structural Bite",
     "Dead Load",
-    "Thermal",
-    "Combined Check",
-    "Material"
+    "Thermal"
 ])
 
 # -----------------------------
@@ -193,100 +185,3 @@ with tabs[2]:
             st.success("OK")
         else:
             st.warning("Increase thickness")
-
-# -----------------------------
-# COMBINED CHECK
-# -----------------------------
-with tabs[3]:
-
-    st.subheader("Combined Design Check")
-
-    wind = st.number_input("Wind Load (kPa)", value=2.5, key="wind_comb")
-    span = st.number_input("Short Span (mm)", value=1000, key="span_comb")
-    thickness = st.number_input("Glass Thickness (mm)", value=10, key="thickness_comb")
-    height = st.number_input("Height (mm)", value=1500, key="height_comb")
-    width = st.number_input("Width (mm)", value=1000, key="width_comb")
-    sealant = st.number_input("Sealant Thickness (mm)", value=6, key="sealant_comb")
-
-    if st.button("Run Check", key="btn_comb"):
-
-        bite = (wind * span) / (2 * 0.14 * 1000)
-
-        h = height / 1000
-        w = width / 1000
-        t = thickness / 1000
-
-        density = 25
-        weight = density * h * w * t
-        perimeter = 2 * (h + w)
-
-        shear = weight / (perimeter * (sealant / 1000))
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.metric("Bite (mm)", f"{bite:.2f}")
-
-        with col2:
-            st.metric("Shear (MPa)", f"{shear:.4f}")
-
-        if bite >= 6 and shear < 0.007:
-            st.success("FINAL STATUS: SAFE")
-        else:
-            st.error("FINAL STATUS: NOT SAFE")
-
-        # REPORT
-        if st.button("Generate Report", key="btn_report"):
-
-            doc = SimpleDocTemplate("report.pdf")
-            styles = getSampleStyleSheet()
-            content = []
-
-            content.append(Paragraph("STRUCTURAL GLAZING REPORT", styles['Title']))
-            content.append(Spacer(1, 12))
-
-            content.append(Paragraph(f"Project: {project}", styles['Normal']))
-            content.append(Paragraph(f"Location: {location}", styles['Normal']))
-            content.append(Paragraph(f"Engineer: {engineer}", styles['Normal']))
-            content.append(Spacer(1, 12))
-
-            table_data = [
-                ["Parameter", "Value"],
-                ["Wind Load", wind],
-                ["Span", span],
-                ["Bite", f"{bite:.2f} mm"],
-                ["Shear", f"{shear:.4f} MPa"]
-            ]
-
-            table = Table(table_data)
-            table.setStyle(TableStyle([
-                ("GRID", (0,0), (-1,-1), 0.5, colors.black)
-            ]))
-
-            content.append(table)
-            doc.build(content)
-
-            with open("report.pdf", "rb") as f:
-                st.download_button("Download Report", f)
-
-# -----------------------------
-# MATERIAL
-# -----------------------------
-with tabs[4]:
-
-    st.subheader("Material Estimation")
-
-    bite = st.number_input("Bite (mm)", value=10, key="bite_mat")
-    thickness = st.number_input("Thickness (mm)", value=6, key="thick_mat")
-    length = st.number_input("Joint Length (m)", value=10, key="length_mat")
-
-    if st.button("Estimate", key="btn_mat"):
-
-        area = (bite * thickness) / 1e6
-        volume = area * length
-
-        liters = volume * 1000
-        cartridges = liters / 0.6
-
-        st.metric("Volume (L)", f"{liters:.2f}")
-        st.metric("Cartridges", f"{cartridges:.0f}")
