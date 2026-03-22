@@ -3,6 +3,29 @@ import math
 from datetime import date
 
 # -----------------------------
+# PASSWORD PROTECTION
+# -----------------------------
+def check_password():
+    def password_entered():
+        if st.session_state["password"] == "Vijay@2026":   # 🔑 change if needed
+            st.session_state["password_correct"] = True
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        st.text_input("Enter Password", type="password", key="password", on_change=password_entered)
+        return False
+    elif not st.session_state["password_correct"]:
+        st.text_input("Enter Password", type="password", key="password", on_change=password_entered)
+        st.error("Incorrect Password")
+        return False
+    else:
+        return True
+
+if not check_password():
+    st.stop()
+
+# -----------------------------
 # PAGE CONFIG
 # -----------------------------
 st.set_page_config(page_title="Structural Glazing Tool", layout="wide")
@@ -35,9 +58,8 @@ st.markdown("## Design Basis")
 
 st.info("""
 Tensile Stress: 0.14 MPa  
-Shear Stress (Long term): 0.007 MPa  
+Shear Stress (Long term): 7 kPa  
 Minimum Bite: 6 mm  
-Minimum Thickness: 6 mm
 """)
 
 # -----------------------------
@@ -58,6 +80,7 @@ with tabs[0]:
 
     shape = st.selectbox("Panel Shape", ["Rectangular", "Circular", "Triangular"], key="shape")
 
+    # RECTANGULAR / CIRCULAR
     if shape in ["Rectangular", "Circular"]:
 
         col1, col2 = st.columns(2)
@@ -79,26 +102,25 @@ with tabs[0]:
             else:
                 st.error("NOT SAFE")
 
+    # TRIANGLE
     elif shape == "Triangular":
 
         st.subheader("Triangular Panel Calculation")
 
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            wind_kg = st.number_input("Wind Load (kg/m²)", value=150, key="wind_tri")
-
-        with col2:
-            side_A = st.number_input("Hypotenuse A (m)", value=2.5, key="sideA")
-
-        with col3:
-            angle_a = st.number_input("Angle a (°)", value=60, key="angleA")
-
+        wind_kpa = st.number_input("Wind Load (kPa)", value=1.5, key="wind_tri")
+        side_A = st.number_input("Hypotenuse A (mm)", value=2500, key="sideA")
+        angle_a = st.number_input("Angle a (°)", value=60, key="angleA")
         angle_b = st.number_input("Angle b (°)", value=30, key="angleB")
 
         if st.button("Calculate Triangle Bite", key="btn_tri"):
 
-            term1 = (wind_kg * side_A) / 28
+            # Convert kPa → kg/m²
+            wind = wind_kpa * 100  
+
+            # Convert mm → m
+            A = side_A / 1000  
+
+            term1 = (wind * A) / 28
 
             tan_a = math.tan(math.radians(angle_a / 2))
             tan_b = math.tan(math.radians(angle_b / 2))
@@ -119,40 +141,43 @@ with tabs[0]:
 # -----------------------------
 with tabs[1]:
 
-    st.subheader("Dead Load Shear Check")
+    st.subheader("Dead Load Calculation")
 
-    col1, col2, col3 = st.columns(3)
+    length = st.number_input("Window Length (mm)", value=1500, key="len_dl")
+    width = st.number_input("Window Width (mm)", value=1500, key="wid_dl")
+    glass_weight = st.number_input("Glass Weight (kg/m²)", value=25, key="gw_dl")
+    bite = st.number_input("Bite (mm)", value=15, key="bite_dl")
 
-    with col1:
-        thickness = st.number_input("Glass Thickness (mm)", value=10, key="thickness_dead")
+    if st.button("Calculate Dead Load", key="btn_dl"):
 
-    with col2:
-        height = st.number_input("Height (mm)", value=1500, key="height_dead")
+        # Convert mm → m
+        L = length / 1000
+        W = width / 1000
 
-    with col3:
-        width = st.number_input("Width (mm)", value=1000, key="width_dead")
+        # Area
+        area = L * W
 
-    sealant = st.number_input("Sealant Thickness (mm)", value=6, key="sealant_dead")
+        # Weight in kg
+        weight_kg = glass_weight * area
 
-    if st.button("Check Shear", key="btn_dead"):
+        # Convert to Newton
+        weight_N = weight_kg * 9.81
 
-        h = height / 1000
-        w = width / 1000
-        t = thickness / 1000
+        # Perimeter
+        perimeter = 2 * (L + W)
 
-        density = 25
+        # Stress (Pa)
+        stress = weight_N / (perimeter * (bite / 1000))
 
-        weight = density * h * w * t
-        perimeter = 2 * (h + w)
+        # Convert to kPa
+        stress_kpa = stress / 1000
 
-        shear = weight / (perimeter * (sealant / 1000))
+        st.metric("Sealant Stress (kPa)", f"{stress_kpa:.2f}")
 
-        st.metric("Shear Stress (MPa)", f"{shear:.4f}")
-
-        if shear < 0.007:
-            st.success("SAFE")
+        if stress_kpa < 7:
+            st.success("PASS")
         else:
-            st.error("NOT SAFE")
+            st.error("FAIL")
 
 # -----------------------------
 # THERMAL
@@ -161,13 +186,8 @@ with tabs[2]:
 
     st.subheader("Thermal Movement")
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        length = st.number_input("Panel Length (mm)", value=1500, key="length")
-
-    with col2:
-        deltaT = st.number_input("Temperature Change (°C)", value=60, key="temp")
+    length = st.number_input("Panel Length (mm)", value=1500, key="length")
+    deltaT = st.number_input("Temperature Change (°C)", value=60, key="temp")
 
     if st.button("Calculate Movement", key="btn_thermal"):
 
